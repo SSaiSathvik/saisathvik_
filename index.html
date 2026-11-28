@@ -355,4 +355,49 @@ function tick(){
 }
 tick();setInterval(tick,15000);
 })();
+/* Test analysis patch (marks got/total). Paste inside your existing script block, AFTER the other patches. */
+(function(){
+const SB={C:"C Programming",DS:"Data Structures",Algo:"Algorithms",TOC:"TOC",CD:"Compiler Design",DL:"Digital Logic",COA:"COA",OS:"Operating Systems",CN:"Computer Networks",DB:"DBMS",DM:"Discrete Maths",EM:"Eng Maths"};
+const KINDS=["Topic","Subject","Mixed","Mocks","Aptitude"],KN={Topic:"Topic tests",Subject:"Subject tests",Mixed:"Mixed tests",Mocks:"Mocks",Aptitude:"Aptitude"};
+let inc={Topic:1,Subject:1},ek="Topic";
+const st=document.createElement("style");
+st.textContent=".an-b{display:flex;align-items:center;gap:8px;margin:5px 0;font:12px ui-monospace,Menlo,monospace}.an-b>span:first-child{width:118px;flex:none;color:#e8f0ff}.an-t{position:relative;flex:1;height:14px;border-radius:7px;background:#1a2447}.an-t i{display:block;height:100%;border-radius:7px}.an-t u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff8}.an-r{width:150px;flex:none;color:#8190b3;text-align:right}.an-i{display:grid;grid-template-columns:1fr 110px;gap:6px;align-items:center;margin:4px 0;font-size:13px}.an-i input{padding:4px 8px;width:100%;box-sizing:border-box}.an-h{margin:14px 0 4px;font:12px ui-monospace,Menlo,monospace;letter-spacing:1.5px;color:#8190b3}.an-c{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;margin:6px 0}";
+document.head.appendChild(st);
+const mk=document.getElementById("mk"),box=document.createElement("details");
+box.id="an";box.className=mk?mk.className:"";
+box.innerHTML='<summary style="cursor:pointer;padding:12px 14px;font-weight:700;color:#00e5ff;list-style:none">\uD83D\uDCCA TEST ANALYSIS (enter marks as got/total)</summary><div id="anb" style="padding:0 14px 14px"></div>';
+if(mk)mk.after(box);else document.body.appendChild(box);
+const pv=s=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/.exec(s||"");return m&&+m[2]>0?{g:+m[1],t:+m[2]}:null};
+const col=(p,tg)=>p>=tg?"#b6ff3b":p>=tg-15?"#ffb020":"#ff4d6d";
+function tests(){const a=[];D.forEach(d=>d.i.forEach((x,j)=>{const t=x.t||"";let k=null,sj=null,nm=t,m;
+ if(d.ph==3&&(m=/^(GO Mock \d+|Official GATE CS paper #\d+)/.exec(t))){k="Mocks";sj="Mocks";nm=m[1]}
+ else if(/^Mixed/.test(t)){k="Mixed";sj="Mixed";nm=t.replace(/ \u2014 .*$/,"")}
+ else if(/^Aptitude test/.test(t)){k="Aptitude";sj="Aptitude";nm=t.replace(/ \(.*$/,"")}
+ else if((m=/^([A-Za-z]+)\u00b7/.exec(t))&&(d.ph==1||d.ph==2)){k=d.ph==1?"Topic":"Subject";sj=SB[m[1]]||m[1];nm=t.replace(/ \u2014 .*$/,"")}
+ if(k)a.push({key:d.n+"."+j,d:d.n,k,sj,name:nm})}));return a}
+const lab=t=>t.sj=="Mocks"?"M"+(t.name.match(/(\d+)$/)||[0,"?"])[1]:t.sj=="Mixed"?"Mx"+(t.name.match(/\d+/)||[""])[0]:t.sj=="Aptitude"?"Ap"+(t.name.match(/\d+/)||[""])[0]:(t.name.match(/^\S+(?: T\d)?/)||[t.name])[0];
+function an(){const e=document.getElementById("anb");if(!e)return;S.tr=S.tr||{};const tg=S.tg2||65,T=tests(),ok=t=>pv(S.tr[t.key]);
+ let h=`<div class="an-c">Target % <input type="number" min="0" max="100" value="${tg}" style="width:70px" onchange="anT(this.value)"><span style="color:#8190b3">Include in charts:</span>`+KINDS.map(k=>`<label><input type="checkbox" ${inc[k]?"checked":""} onchange="anF('${k}',this.checked)"> ${KN[k]}</label>`).join("")+`</div>`;
+ const rows={};T.forEach(t=>{const p=ok(t);if(!p||!inc[t.k])return;const r=rows[t.sj]=rows[t.sj]||{g:0,t:0,n:0};r.g+=p.g;r.t+=p.t;r.n++});
+ const rk=Object.keys(rows).map(k=>({k,p:rows[k].g/rows[k].t*100,...rows[k]})).sort((a,b)=>a.p-b.p);
+ h+=`<div class="an-h">SUBJECT-WISE ANALYSIS (weakest first)</div>`+(rk.length?rk.map(r=>`<div class="an-b"><span>${r.k}</span><div class="an-t"><i style="width:${Math.max(0,Math.min(100,r.p))}%;background:${col(r.p,tg)};box-shadow:0 0 10px ${col(r.p,tg)}"></i><u style="left:${tg}%"></u></div><span class="an-r">${+r.g.toFixed(2)}/${+r.t.toFixed(2)} \u00b7 ${r.p.toFixed(1)}% \u00b7 ${r.n} test${r.n>1?"s":""}</span></div>`).join(""):`<div class="mu">Enter marks below to see this chart.</div>`);
+ const weak=rk.filter(r=>r.p<tg).slice(0,3);if(weak.length)h+=`<div class="mu" style="margin-top:6px">Focus next: ${weak.map(r=>r.k+" "+r.p.toFixed(0)+"%").join(" \u00b7 ")}</div>`;
+ const tt=T.filter(t=>inc[t.k]&&ok(t));
+ h+=`<div class="an-h">TEST-WISE ANALYSIS (each bar = one test, %)</div>`;
+ if(tt.length){const W=Math.max(300,tt.length*24+40);
+  h+=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} 190" width="${W}" height="190"><line x1="24" x2="${W-6}" y1="${140-tg*1.3}" y2="${140-tg*1.3}" stroke="#fff8" stroke-dasharray="4 4"/><text x="2" y="${143-tg*1.3}" fill="#8190b3" font-size="9">${tg}</text>`+
+  tt.map((t,i)=>{const p=ok(t),pc=p.g/p.t*100,x=28+i*24,hh=Math.max(0,Math.min(100,pc))*1.3;return `<rect x="${x}" y="${140-hh}" width="16" height="${hh}" rx="3" fill="${col(pc,tg)}" style="filter:drop-shadow(0 0 4px ${col(pc,tg)})"><title>${t.name}: ${p.g}/${p.t} (${pc.toFixed(1)}%)</title></rect><text x="${x+8}" y="${140-hh-3}" text-anchor="middle" fill="#e8f0ff" font-size="8">${Math.round(pc)}</text><text transform="translate(${x+10},150) rotate(60)" fill="#8190b3" font-size="9">${lab(t)}</text>`}).join("")+`</svg></div>`}
+ else h+=`<div class="mu">No marks entered for the selected test types yet.</div>`;
+ const mt=T.filter(t=>t.k=="Mocks");const mp=mt.map((t,i)=>({i,p:ok(t)})).filter(x=>x.p);
+ if(mp.length>1){const pts=mp.map(x=>[10+x.i/29*300,90-Math.max(0,Math.min(100,x.p.g/x.p.t*100))*.8]);
+  h+=`<div class="an-h">MOCK TREND (% of total marks)</div><svg viewBox="0 0 320 100" width="100%" height="110"><line x1="10" x2="310" y1="${90-tg*.8}" y2="${90-tg*.8}" stroke="#b6ff3b" stroke-dasharray="4 4"/><polyline fill="none" stroke="#ff3df0" stroke-width="2.5" points="${pts.map(p=>p.join(",")).join(" ")}" style="filter:drop-shadow(0 0 4px #ff3df0)"/>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#00e5ff"/>`).join("")}</svg>`}
+ h+=`<div class="an-h">ENTER MARKS</div><div class="an-c"><select onchange="anE(this.value)" style="background:#0a1020;color:#e8f0ff;border:1px solid #28386d;border-radius:10px;padding:6px">`+KINDS.map(k=>`<option value="${k}" ${k==ek?"selected":""}>${KN[k]}</option>`).join("")+`</select><span class="mu">format: marks/total, e.g. 18.33/25 (negative marks allowed)</span></div>`;
+ h+=T.filter(t=>t.k==ek).map(t=>{const v=S.tr[t.key]||"",bad=v&&!pv(v);return `<div class="an-i"><span>D${t.d} \u00b7 ${t.name}</span><input value="${v}" placeholder="got/total" ${bad?'style="border-color:#ff4d6d"':""} onchange="anI('${t.key}',this.value)"></div>`}).join("");
+ e.innerHTML=h}
+window.anI=(k,v)=>{S.tr=S.tr||{};v=v.trim();if(v)S.tr[k]=v;else delete S.tr[k];save();an()};
+window.anT=v=>{S.tg2=Math.max(0,Math.min(100,+v||65));save();an()};
+window.anF=(k,c)=>{inc[k]=c?1:0;an()};window.anE=v=>{ek=v;an()};
+const _r=render;render=function(){_r.apply(this,arguments);an()};
+an();
+})();
 </script></body></html>
